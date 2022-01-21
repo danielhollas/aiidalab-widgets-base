@@ -1,4 +1,6 @@
 """Some utility functions used acrross the repository."""
+import more_itertools as mit
+from ase.io import read
 
 
 def valid_arguments(arguments, valid_args):
@@ -7,7 +9,7 @@ def valid_arguments(arguments, valid_args):
     for key, value in arguments.items():
         if key in valid_args:
             if isinstance(value, (tuple, list)):
-                result[key] = '\n'.join(value)
+                result[key] = "\n".join(value)
             else:
                 result[key] = value
     return result
@@ -22,28 +24,28 @@ def predefine_settings(obj, **kwargs):
             raise AttributeError("'{}' object has no attirubte '{}'".format(obj, key))
 
 
-def get_ase_from_file(fname):
+def get_ase_from_file(fname, format=None):  # pylint: disable=redefined-builtin
     """Get ASE structure object."""
-    from ase.io import read
-    try:
-        traj = read(fname, index=":")
-    except Exception as exc:  # pylint: disable=broad-except
-        if exc.args:
-            print((' '.join([str(c) for c in exc.args])))
-        else:
-            print("Unknown error")
-        return False
+    if format == "cif":
+        traj = read(fname, format=format, index=":", store_tags=True)
+    else:
+        traj = read(fname, format=format, index=":")
     if not traj:
         print(("Could not read any information from the file {}".format(fname)))
         return False
     if len(traj) > 1:
-        print(("Warning: Uploaded file {} contained more than one structure. Selecting the first one.".format(fname)))
+        print(
+            (
+                "Warning: Uploaded file {} contained more than one structure. Selecting the first one.".format(
+                    fname
+                )
+            )
+        )
     return traj[0]
 
 
 def find_ranges(iterable):
     """Yield range of consecutive numbers."""
-    import more_itertools as mit
     for group in mit.consecutive_groups(iterable):
         group = list(group)
         if len(group) == 1:
@@ -52,22 +54,32 @@ def find_ranges(iterable):
             yield group[0], group[-1]
 
 
-def set_to_string_range(selection):
-    """Convert a set like {1, 3, 4, 5} into a string like '1 3..5'."""
+def list_to_string_range(lst, shift=1):
+    """Converts a list like [0, 2, 3, 4] into a string like '1 3..5'.
+
+    Shift used when e.g. for a user interface numbering starts from 1 not from 0"""
     return " ".join(
-        [str(t) if isinstance(t, int) else "{}..{}".format(t[0], t[1]) for t in find_ranges(sorted(selection))])
+        [
+            f"{t[0] + shift}..{t[1] + shift}"
+            if isinstance(t, tuple)
+            else str(t + shift)
+            for t in find_ranges(sorted(lst))
+        ]
+    )
 
 
-def string_range_to_set(strng):
-    """Convert a string like '1 3..5' into a set like {1, 3, 4, 5}."""
-    singles = [int(s) for s in strng.split() if s.isdigit()]
-    ranges = [r for r in strng.split() if '..' in r]
+def string_range_to_list(strng, shift=-1):
+    """Converts a string like '1 3..5' into a list like [0, 2, 3, 4].
+
+    Shift used when e.g. for a user interface numbering starts from 1 not from 0"""
+    singles = [int(s) + shift for s in strng.split() if s.isdigit()]
+    ranges = [r for r in strng.split() if ".." in r]
     if len(singles) + len(ranges) != len(strng.split()):
-        return set(), False
+        return list(), False
     for rng in ranges:
         try:
-            start, end = rng.split('..')
-            singles += [i for i in range(int(start), int(end) + 1)]
+            start, end = rng.split("..")
+            singles += [i + shift for i in range(int(start), int(end) + 1)]
         except ValueError:
-            return set(), False
-    return set(singles), True
+            return list(), False
+    return singles, True

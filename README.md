@@ -1,61 +1,45 @@
-# aiidalab-widgets-base 
+[![Documentation Status](https://readthedocs.org/projects/aiidalab-widgets-base/badge/?version=latest)](https://aiidalab-widgets-base.readthedocs.io/en/latest/?badge=latest)
 
-Reusable widgets for applications in the AiiDA lab.
+# AiiDAlab Widgets
 
-## Installation
+[AiiDAlab](https://materialscloud.org/aiidalab) applications typically involve some of following steps:
 
-Install the `aiidalab_widgets_base` python package via:
-```
-pip install aiidalab-widgets-base 
-```
+ * Prepare the input for a calculation (e.g. an atomic structure).
+ * Select computational resources and submit a calculation to AiiDA.
+ * Monitor a running calculation.
+ * Find and analyze the results of a calculation.
 
-Install the corresponding `aiidalab-widgets-base` AiiDA lab application
-via the app manager as usual.
+The AiiDAlab widgets help with these common tasks.
 
-### Optional dependencies
+## Documentation
 
-* The `SmilesWidget` widget requires the [OpenBabel](http://openbabel.org/) library.
+Hosted on [aiidalab-widgets-base.readthedocs.io](https://aiidalab-widgets-base.readthedocs.io).
 
-## Usage
+## For maintainers
 
-Using the widgets usually just involves importing and displaying them.
-For demos, have a look at the jupyter notebooks (`.ipynb` extension) in
-this folder.
+To create a new release, clone the repository, install development dependencies with `pip install -e '.[dev]'`, and then execute `bumpver update [--major|--minor|--patch] [--tag [alpha|beta|rc]]`.
+This will:
 
-### Structures
+  1. Create a tagged release with bumped version and push it to the repository.
+  2. Trigger a GitHub actions workflow that creates a GitHub release and publishes it on PyPI.
 
-Uploading structures
-```python
-from aiidalab_widgets_base import StructureUploadWidget
-from IPython.display import display
+Additional notes:
 
-widget = StructureUploadWidget()
-# Enforce node format to be CifData:
-# widget = StructureUploadWidget(node_class='CifData')
-display(widget)
-```
-
-![Demo](https://image.ibb.co/fjnHco/structure.gif "Using the StructureUploadWidget.")
-
-### Codes
-
-Selecting codes
-```python
-from aiidalab_widgets_base import CodeDropdown
-from IPython.display import display
-
-# Select from installed codes for 'zeopp.network' input plugin
-dropdown = CodeDropdown(input_plugin='zeopp.network')
-display(dropdown)
-
-dropdown.selected_code  # returns selected code
-```
-
-![Demo](https://image.ibb.co/gSFFf8/codes.gif "Using the CodeDropDown.")
+  - Use the `--dry` option to preview the release change.
+  - The release tag (e.g. a/b/rc) is determined from the last release.
+    Use the `--tag` option to switch the release tag.
+  - This packages follows semantic versioning.
 
 ## License
 
 MIT
+
+## Citation
+
+Users of AiiDAlab are kindly asked to cite the following publication in their own work:
+
+A. V. Yakutovich et al., Comp. Mat. Sci. 188, 110165 (2021).
+[DOI:10.1016/j.commatsci.2020.110165](https://doi.org/10.1016/j.commatsci.2020.110165)
 
 ## Contact
 
