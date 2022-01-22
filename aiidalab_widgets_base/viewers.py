@@ -168,44 +168,46 @@ class _StructureDataBaseViewer(ipw.VBox):
     DEFAULT_SELECTION_RADIUS = 6
     DEFAULT_SELECTION_COLOR = "green"
 
-    def __init__(self, configure_view=True, **kwargs):
+    def __init__(
+        self,
+        configure_view=True,
+        configuration_tabs=["Selection", "Appearance", "Cell", "Download"],
+        default_camera="orthographic",
+        show_camera_selector=True,
+        **kwargs,
+    ):
         # Defining viewer box.
 
         # 1. Nglviwer
         self._viewer = nglview.NGLWidget()
-        self._viewer.camera = "orthographic"
+        self._viewer.camera = default_camera
         self._viewer.observe(self._on_atom_click, names="picked")
         self._viewer.stage.set_parameters(mouse_preset="pymol")
 
-        # 2. Camera type.
-        camera_type = ipw.ToggleButtons(
-            options={"Orthographic": "orthographic", "Perspective": "perspective"},
-            description="Camera type:",
-            value="orthographic",
-            layout={"align_self": "flex-end"},
-            style={"button_width": "115.5px"},
-            orientation="vertical",
-        )
-
-        def change_camera(change):
-
-            self._viewer.camera = change["new"]
-
-        camera_type.observe(change_camera, names="value")
-        view_box = ipw.VBox([self._viewer, camera_type])
+        # 2. Camera type selector.
+        if show_camera_selector:
+            view_box = ipw.VBox([self._viewer, self._camera_selection(default_camera)])
+        else:
+            view_box = ipw.VBox([self._viewer])
 
         # Constructing configuration box
         if configure_view:
             configuration_box = ipw.Tab(
                 layout=ipw.Layout(flex="1 1 auto", width="auto")
             )
-            configuration_box.children = [
-                self._selection_tab(),
-                self._appearance_tab(),
-                self._cell_tab(),
-                self._download_tab(),
-            ]
-            for i, title in enumerate(["Selection", "Appearance", "Cell", "Download"]):
+
+            configuration_tabs_map = {
+                "Selection": self._selection_tab(),
+                "Appearance": self._appearance_tab(),
+                "Cell": self._cell_tab(),
+                "Download": self._download_tab(),
+            }
+            tabs = []
+            for tab_title in configuration_tabs:
+                tabs.append(configuration_tabs_map[tab_title])
+            configuration_box.children = tabs
+
+            for i, title in enumerate(configuration_tabs):
                 configuration_box.set_title(i, title)
             children = [ipw.HBox([view_box, configuration_box])]
             view_box.layout = {"width": "60%"}
@@ -216,6 +218,23 @@ class _StructureDataBaseViewer(ipw.VBox):
             children += kwargs.pop("children")
 
         super().__init__(children, **kwargs)
+
+    def _camera_selection(self, default_camera):
+        camera_type = ipw.ToggleButtons(
+            options={"Orthographic": "orthographic", "Perspective": "perspective"},
+            description="Camera type:",
+            value=default_camera,
+            layout={"align_self": "flex-end"},
+            style={"button_width": "115.5px"},
+            orientation="vertical",
+        )
+
+        def change_camera(change):
+
+            self._viewer.camera = change["new"]
+
+        camera_type.observe(change_camera, names="value")
+        return camera_type
 
     def _selection_tab(self):
         """Defining the selection tab."""
@@ -254,6 +273,9 @@ class _StructureDataBaseViewer(ipw.VBox):
         apply_selection.on_click(self.apply_selection)
 
         self.selection_info = ipw.HTML()
+
+        self.observe(self._observe_selection, names="selection")
+        self.observe(self._observe_selection_2, names="selection")
 
         return ipw.VBox(
             [
@@ -305,7 +327,6 @@ class _StructureDataBaseViewer(ipw.VBox):
 
         return ipw.VBox([supercell_selector, background_color, center_button])
 
-    @observe("cell")
     def _observe_cell(self, _=None):
         if self.cell:
             self.cell_a.value = "<i><b>a</b></i>: {:.4f} {:.4f} {:.4f}".format(
@@ -358,6 +379,8 @@ class _StructureDataBaseViewer(ipw.VBox):
         self.cell_gamma = ipw.HTML()
 
         self._observe_cell()
+
+        self.observe(self._observe_cell, names="cell")
 
         return ipw.VBox(
             [
@@ -614,7 +637,6 @@ class _StructureDataBaseViewer(ipw.VBox):
     def _validate_selection(self, provided):
         return list(provided["value"])
 
-    @observe("selection")
     def _observe_selection(self, _=None):
         self.highlight_atoms(self.selection)
         self._selected_atoms.value = list_to_string_range(self.selection, shift=1)
@@ -991,7 +1013,6 @@ class StructureDataViewer(_StructureDataBaseViewer):
         except (IndexError, TypeError, AttributeError):
             self.wrong_syntax.layout.visibility = "visible"
 
-    @observe("selection")
     def _observe_selection_2(self, _=None):
         self.selection_info.value = self.create_selection_info()
 
